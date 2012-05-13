@@ -1,0 +1,84 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'cstruct'
+
+GRAINS_PER_TABLE = 4096
+GRAIN_SIZE = 512
+
+# Taken directly from VMWare Technote "Virtual Disk Format 5.0", p. 10
+class COWDiskHeader < CStruct
+	uint32  :magicNumber
+	uint32  :version
+	uint32  :flags
+	uint32  :numSectors
+	uint32  :grainSize
+	uint32  :gdOffset
+	uint32  :numGDEntries
+	uint32  :freeSector
+	char    :parentFilename, [1024]
+	uint32  :parentGeneration
+	uint32  :generation
+	char    :name, [60]
+	char    :description, [512]
+	uint32  :savedGeneration
+	char    :reserved, [8]
+	uint32  :uncleanShutdown
+	char    :padding, [396]
+end
+
+def apply_snapshot(src, dest)
+	File.open(src) do |srcfd|
+		File.open(dest, 'a') do |destfd|
+			hdr = COWDiskHeader.new
+			hdr.data = srcfd.read(COWDiskHeader.size)
+
+			if hdr.magicNumber != 0x44574f43
+				$stderr.puts "ERROR: Wrong magic number.  Is this a snapshot file?"
+				return 1
+			end
+			if hdr.version != 1
+				$stderr.puts "ERROR: Unknown file format version.  Exiting to prevent disaster."
+				return 1
+			end
+			if hdr.flags != 3
+				$stderr.puts "ERROR: Unexpected flags value.  Exiting to prevent disaster."
+				return 1
+			end
+
+			numtbls = hdr.numSectors / GRAINS_PER_TABLE
+			tbls = srcfd.read(numtbls*4).unpack("L*")
+			tbls.each_with_index do |tbl, i|
+				apply_table(srcfd, destfd, tbl, i) if tbl > 1
+			end
+		end
+	end
+	
+	0
+end
+
+def apply_table(srcfd, destfd, tbl_sector, tbl_idx)
+	srcfd.seek(tbl_sector * GRAIN_SIZE, IO::SEEK_SET)
+	tbl = srcfd.read(4*GRAINS_PER_TABLE).unpack("L*")
+	tbl.each_with_index do |grain, i|
+		if grain > 0
+			srcfd.seek(grain*GRAIN_SIZE, IO::SEEK_SET)
+			destfd.seek((tbl_idx * GRAINS_PER_TABLE + i) * GRAIN_SIZE, IO::SEEK_SET)
+			destfd.write(srcfd.read(GRAIN_SIZE))
+		end
+	end
+end
+
+def usage
+	$stderr.puts <<EOF
+Usage: #{$0} <snapshot> <destination>
+
+  <snapshot> is the *-delta.vmdk file which you want to apply; and
+  <destination> is the file or block device you want to apply the snapshot to.
+EOF
+end
+
+if __FILE__ == $0
+	ARGV.length == 2 or (usage; exit 1)
+	exit(apply_snapshot(ARGV[0], ARGV[1]))
+end
