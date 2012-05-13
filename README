@@ -18,6 +18,14 @@ considerable amount of downtime.  In my own VMware migration, I got the
 process tuned to the point that a VM was unable to respond to pings for less
 than 90 seconds.
 
+
+## Requirements
+
+This script is written in Ruby.  Any halfway-recent 1.8 version of Ruby
+should work.  I haven't tested it on 1.9, but I'd be surprised if it didn't
+work.
+
+
 ## Using vmdksync
 
 These instructions assume that you know how to setup the VM configuration on
@@ -64,9 +72,10 @@ I'd highly recommend writing some scripts that do all the right things in
 the right order for your environment, to minimise downtime and reduce the
 chances of human error.
 
+
 ## Questions?  Comments?
 
 Since I got rid of my VMware servers, I'm not really in a position to be
-able to test tricky bug reports, but if you'd like to submit patches,
-comments, or whatever, please feel free to e-mail
+able to verify and fix tricky bug reports, but if you'd like to submit
+patches, comments, or whatever, please feel free to e-mail
 `theshed+vmdksync@hezmatt.org`.
