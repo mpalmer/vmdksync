@@ -1,6 +1,5 @@
 #!/usr/bin/ruby
 
-require 'rubygems'
 require 'cstruct'
 
 GRAINS_PER_TABLE = 4096

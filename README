@@ -25,6 +25,10 @@ This script is written in Ruby.  Any halfway-recent 1.8 version of Ruby
 should work.  I haven't tested it on 1.9, but I'd be surprised if it didn't
 work.
 
+You will also need the `cstruct` gem.  If you use rubygems, you'll want to
+follow [Ryan Tomayko's advice about RUBYOPT](http://gist.github.com/54177),
+because I'm not going to `require 'rubygems'` for you.
+
 
 ## Using vmdksync
 
